@@ -550,8 +550,7 @@ gpujpeg_coder_init(struct gpujpeg_coder * coder)
     coder->cuda_cc_major = device_properties.major;
     coder->cuda_cc_minor = device_properties.minor;
     if (device_properties.major < 2) {
-        fprintf(stderr, "GPUJPEG coder is currently broken on cards with cc < 2.0\n");
-        return -1;
+        fprintf(stderr, "[GPUJPEG] [Warning] cc < 2.0: using legacy (pre-Fermi) kernels\n");
     }
 
     // Initialize coder for no image
