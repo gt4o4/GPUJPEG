@@ -495,9 +495,15 @@ gpujpeg_idct_gpu_kernel(int16_t* source, uint8_t* result, int output_stride, uin
 	//so this proves to be the fastest way
 #pragma unroll
 	for (int i = 0; i < 8; i++) {
-		data[threadIdx.z][i][threadIdx.x][threadIdx.y] = sourcePtr[x8
+		// Explicit float promotion of BOTH operands: the int16_t x uint16_t
+		// integer multiply tempts nvcc's legacy sm_1x frontend (Open64) into
+		// an unsigned 16-bit load of the coefficient - negative coefficients
+		// become huge positives and the IDCT saturates (GT 130 / CUDA 6.5,
+		// found 2026-07-20).  Verified bit-exact on sm_11 with the casts;
+		// modern NVVM codegen is unaffected either way.
+		data[threadIdx.z][i][threadIdx.x][threadIdx.y] = (float) sourcePtr[x8
 				+ threadIdx.y + i * GPUJPEG_IDCT_BLOCK_X * GPUJPEG_IDCT_BLOCK_Y + z64 * 8]
-				* quantization_table[threadIdx.x * 8 + threadIdx.y];
+				* (float) quantization_table[threadIdx.x * 8 + threadIdx.y];
 	}
 	
 	__syncthreads();
