@@ -731,7 +731,7 @@ gpujpeg_reader_read_dqt(struct gpujpeg_decoder* decoder, uint8_t** image, const 
 }
 
 static const char *array_serialize(int comp_count, const uint8_t *comp_id) {
-    _Thread_local static char buffer[1024] = "[";
+    static _Thread_local char buffer[1024] = "[";
     if (comp_count >= 1) {
         snprintf(buffer + strlen(buffer), sizeof buffer - strlen(buffer), "%" PRIu8, comp_id[0]);
     }
