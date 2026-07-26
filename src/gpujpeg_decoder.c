@@ -381,8 +381,16 @@ gpujpeg_decoder_decode(struct gpujpeg_decoder* decoder, uint8_t* image, size_t i
     }
     GPUJPEG_CUSTOM_TIMER_STOP(coder->duration_preprocessor, coder->param.perf_stats, coder->stream, return -1);
 
-    // Wait for async operations before copying from the device
-    cudaStreamSynchronize(coder->stream);
+    // Wait for async operations before copying from the device.
+    // CUSTOM_CUDA_BUFFER outputs involve no host copy: the decode stays
+    // queued on the decoder's stream and SYNCHRONIZATION IS THE CALLER'S
+    // RESPONSIBILITY (sync the stream - or, for stream-0/legacy callers,
+    // any default-stream operation such as a cudaGraphicsUnmapResources -
+    // before reading the buffer).  This lets a caller run decodes on
+    // several decoders/streams concurrently.
+    if (output->type != GPUJPEG_DECODER_OUTPUT_CUSTOM_CUDA_BUFFER) {
+        cudaStreamSynchronize(coder->stream);
+    }
 
     GPUJPEG_CUSTOM_TIMER_STOP(coder->duration_in_gpu, coder->param.perf_stats, coder->stream, return -1);
 
